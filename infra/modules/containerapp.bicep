@@ -77,7 +77,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 8000
+        targetPort: 80
         transport: 'http'
         allowInsecure: false
         traffic: [
@@ -103,9 +103,13 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     template: {
       containers: [
         {
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          image: 'mcr.microsoft.com/azuredocs/aci-helloworld:latest'
           name: 'api'
           env: [
+            {
+              name: 'PORT'
+              value: '80'
+            }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               secretRef: 'appinsights-connection-string'
@@ -127,8 +131,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'Liveness'
               httpGet: {
-                path: '/health'
-                port: 8000
+                path: '/'
+                port: 80
                 scheme: 'HTTP'
               }
               initialDelaySeconds: 30
@@ -139,8 +143,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'Readiness'
               httpGet: {
-                path: '/health'
-                port: 8000
+                path: '/'
+                port: 80
                 scheme: 'HTTP'
               }
               initialDelaySeconds: 5

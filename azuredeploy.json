@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "8679674762328802768"
+      "templateHash": "2299937807714294467"
     }
   },
   "parameters": {
@@ -68,7 +68,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "1149690839211157882"
+              "templateHash": "690406322372682539"
             }
           },
           "parameters": {
@@ -408,7 +408,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "17715583424515599962"
+                      "templateHash": "14925710613521747984"
                     }
                   },
                   "parameters": {
@@ -518,7 +518,7 @@
                         "configuration": {
                           "ingress": {
                             "external": true,
-                            "targetPort": 8000,
+                            "targetPort": 80,
                             "transport": "http",
                             "allowInsecure": false,
                             "traffic": [
@@ -544,9 +544,13 @@
                         "template": {
                           "containers": [
                             {
-                              "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+                              "image": "mcr.microsoft.com/azuredocs/aci-helloworld:latest",
                               "name": "api",
                               "env": [
+                                {
+                                  "name": "PORT",
+                                  "value": "80"
+                                },
                                 {
                                   "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
                                   "secretRef": "appinsights-connection-string"
@@ -568,8 +572,8 @@
                                 {
                                   "type": "Liveness",
                                   "httpGet": {
-                                    "path": "/health",
-                                    "port": 8000,
+                                    "path": "/",
+                                    "port": 80,
                                     "scheme": "HTTP"
                                   },
                                   "initialDelaySeconds": 30,
@@ -580,8 +584,8 @@
                                 {
                                   "type": "Readiness",
                                   "httpGet": {
-                                    "path": "/health",
-                                    "port": 8000,
+                                    "path": "/",
+                                    "port": 80,
                                     "scheme": "HTTP"
                                   },
                                   "initialDelaySeconds": 5,
