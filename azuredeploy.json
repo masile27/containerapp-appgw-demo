@@ -1,0 +1,964 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "8679674762328802768"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "dev",
+      "minLength": 1,
+      "maxLength": 64,
+      "metadata": {
+        "description": "Name of the environment that can be used as part of naming resource convention"
+      }
+    },
+    "location": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Primary location for all resources"
+      }
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "defaultValue": "[format('rg-{0}', parameters('environmentName'))]",
+      "metadata": {
+        "description": "Name of the resource group"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[parameters('resourceGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": {
+        "azd-env-name": "[parameters('environmentName')]"
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "resources",
+      "resourceGroup": "[parameters('resourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "environmentName": {
+            "value": "[parameters('environmentName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "1149690839211157882"
+            }
+          },
+          "parameters": {
+            "environmentName": {
+              "type": "string",
+              "metadata": {
+                "description": "The environment name. Used for naming resources."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for all resources."
+              }
+            }
+          },
+          "variables": {
+            "resourceToken": "[toLower(uniqueString(subscription().id, parameters('environmentName'), parameters('location')))]",
+            "tags": {
+              "azd-env-name": "[parameters('environmentName')]"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2023-09-01",
+              "name": "[format('law-{0}-{1}', parameters('environmentName'), variables('resourceToken'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30,
+                "features": {
+                  "searchVersion": 1,
+                  "legacy": 0,
+                  "enableLogAccessUsingOnlyResourcePermissions": true
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[format('ai-{0}-{1}', parameters('environmentName'), variables('resourceToken'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('tags')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2023-07-01",
+              "name": "[format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('tags')]",
+              "sku": {
+                "name": "Basic"
+              },
+              "properties": {
+                "adminUserEnabled": false
+              }
+            },
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken'))]",
+              "location": "[parameters('location')]",
+              "tags": "[variables('tags')]"
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken')))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken'))), '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken')))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "network",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "environmentName": {
+                    "value": "[parameters('environmentName')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "resourceToken": {
+                    "value": "[variables('resourceToken')]"
+                  },
+                  "tags": {
+                    "value": "[variables('tags')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.37.4.10188",
+                      "templateHash": "8440867953957882556"
+                    }
+                  },
+                  "parameters": {
+                    "environmentName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The environment name. Used for naming resources."
+                      }
+                    },
+                    "location": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Location for all resources."
+                      }
+                    },
+                    "resourceToken": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Resource token for unique naming."
+                      }
+                    },
+                    "tags": {
+                      "type": "object",
+                      "metadata": {
+                        "description": "Tags to apply to resources."
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Network/virtualNetworks",
+                      "apiVersion": "2023-09-01",
+                      "name": "[format('vnet-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "addressSpace": {
+                          "addressPrefixes": [
+                            "10.0.0.0/16"
+                          ]
+                        },
+                        "subnets": [
+                          {
+                            "name": "snet-appgateway",
+                            "properties": {
+                              "addressPrefix": "10.0.1.0/24",
+                              "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('nsg-appgateway-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]"
+                              }
+                            }
+                          },
+                          {
+                            "name": "snet-containerapp",
+                            "properties": {
+                              "addressPrefix": "10.0.2.0/23",
+                              "delegations": [
+                                {
+                                  "name": "Microsoft.App.environments",
+                                  "properties": {
+                                    "serviceName": "Microsoft.App/environments"
+                                  }
+                                }
+                              ],
+                              "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('nsg-containerapp-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', format('nsg-appgateway-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]",
+                        "[resourceId('Microsoft.Network/networkSecurityGroups', format('nsg-containerapp-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Network/networkSecurityGroups",
+                      "apiVersion": "2023-09-01",
+                      "name": "[format('nsg-appgateway-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "securityRules": [
+                          {
+                            "name": "AllowGatewayManagerInbound",
+                            "properties": {
+                              "description": "Allow Azure infrastructure communication",
+                              "protocol": "Tcp",
+                              "sourcePortRange": "*",
+                              "destinationPortRange": "65200-65535",
+                              "sourceAddressPrefix": "GatewayManager",
+                              "destinationAddressPrefix": "*",
+                              "access": "Allow",
+                              "priority": 100,
+                              "direction": "Inbound"
+                            }
+                          },
+                          {
+                            "name": "AllowHTTPInbound",
+                            "properties": {
+                              "description": "Allow HTTP traffic",
+                              "protocol": "Tcp",
+                              "sourcePortRange": "*",
+                              "destinationPortRange": "80",
+                              "sourceAddressPrefix": "*",
+                              "destinationAddressPrefix": "*",
+                              "access": "Allow",
+                              "priority": 110,
+                              "direction": "Inbound"
+                            }
+                          },
+                          {
+                            "name": "AllowHTTPSInbound",
+                            "properties": {
+                              "description": "Allow HTTPS traffic",
+                              "protocol": "Tcp",
+                              "sourcePortRange": "*",
+                              "destinationPortRange": "443",
+                              "sourceAddressPrefix": "*",
+                              "destinationAddressPrefix": "*",
+                              "access": "Allow",
+                              "priority": 120,
+                              "direction": "Inbound"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Network/networkSecurityGroups",
+                      "apiVersion": "2023-09-01",
+                      "name": "[format('nsg-containerapp-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "securityRules": [
+                          {
+                            "name": "AllowApplicationGatewayInbound",
+                            "properties": {
+                              "description": "Allow traffic from Application Gateway subnet",
+                              "protocol": "*",
+                              "sourcePortRange": "*",
+                              "destinationPortRange": "*",
+                              "sourceAddressPrefix": "10.0.1.0/24",
+                              "destinationAddressPrefix": "*",
+                              "access": "Allow",
+                              "priority": 100,
+                              "direction": "Inbound"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "outputs": {
+                    "virtualNetworkId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Network/virtualNetworks', format('vnet-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]"
+                    },
+                    "applicationGatewaySubnetId": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', format('vnet-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))), '2023-09-01').subnets[0].id]"
+                    },
+                    "containerAppSubnetId": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', format('vnet-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))), '2023-09-01').subnets[1].id]"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "containerapp",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "environmentName": {
+                    "value": "[parameters('environmentName')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "resourceToken": {
+                    "value": "[variables('resourceToken')]"
+                  },
+                  "tags": {
+                    "value": "[variables('tags')]"
+                  },
+                  "logAnalyticsWorkspaceId": {
+                    "value": "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]"
+                  },
+                  "applicationInsightsConnectionString": {
+                    "value": "[reference(resourceId('Microsoft.Insights/components', format('ai-{0}-{1}', parameters('environmentName'), variables('resourceToken'))), '2020-02-02').ConnectionString]"
+                  },
+                  "containerRegistryName": {
+                    "value": "[format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]"
+                  },
+                  "userAssignedIdentityId": {
+                    "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]"
+                  },
+                  "subnetId": {
+                    "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2022-09-01').outputs.containerAppSubnetId.value]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.37.4.10188",
+                      "templateHash": "17715583424515599962"
+                    }
+                  },
+                  "parameters": {
+                    "environmentName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The environment name. Used for naming resources."
+                      }
+                    },
+                    "location": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Location for all resources."
+                      }
+                    },
+                    "resourceToken": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Resource token for unique naming."
+                      }
+                    },
+                    "tags": {
+                      "type": "object",
+                      "metadata": {
+                        "description": "Tags to apply to resources."
+                      }
+                    },
+                    "logAnalyticsWorkspaceId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Log Analytics Workspace ID"
+                      }
+                    },
+                    "applicationInsightsConnectionString": {
+                      "type": "securestring",
+                      "metadata": {
+                        "description": "Application Insights connection string"
+                      }
+                    },
+                    "containerRegistryName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Container Registry name"
+                      }
+                    },
+                    "userAssignedIdentityId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "User Assigned Identity ID"
+                      }
+                    },
+                    "subnetId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Subnet ID for Container App Environment"
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.App/managedEnvironments",
+                      "apiVersion": "2024-03-01",
+                      "name": "[format('cae-{0}', take(parameters('resourceToken'), 10))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "workloadProfiles": [
+                          {
+                            "name": "Consumption",
+                            "workloadProfileType": "Consumption"
+                          },
+                          {
+                            "name": "GeneralPurpose",
+                            "workloadProfileType": "D4",
+                            "minimumCount": 1,
+                            "maximumCount": 3
+                          }
+                        ],
+                        "vnetConfiguration": {
+                          "infrastructureSubnetId": "[parameters('subnetId')]",
+                          "internal": false
+                        },
+                        "appLogsConfiguration": {
+                          "destination": "log-analytics",
+                          "logAnalyticsConfiguration": {
+                            "customerId": "[reference(parameters('logAnalyticsWorkspaceId'), '2023-09-01').customerId]",
+                            "sharedKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2023-09-01').primarySharedKey]"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "Microsoft.App/containerApps",
+                      "apiVersion": "2024-03-01",
+                      "name": "[format('api-{0}', take(parameters('resourceToken'), 8))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[union(parameters('tags'), createObject('azd-service-name', 'api'))]",
+                      "identity": {
+                        "type": "UserAssigned",
+                        "userAssignedIdentities": {
+                          "[format('{0}', parameters('userAssignedIdentityId'))]": {}
+                        }
+                      },
+                      "properties": {
+                        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}', take(parameters('resourceToken'), 10)))]",
+                        "workloadProfileName": "GeneralPurpose",
+                        "configuration": {
+                          "ingress": {
+                            "external": true,
+                            "targetPort": 8000,
+                            "transport": "http",
+                            "allowInsecure": false,
+                            "traffic": [
+                              {
+                                "weight": 100,
+                                "latestRevision": true
+                              }
+                            ]
+                          },
+                          "registries": [
+                            {
+                              "server": "[format('{0}.azurecr.io', parameters('containerRegistryName'))]",
+                              "identity": "[parameters('userAssignedIdentityId')]"
+                            }
+                          ],
+                          "secrets": [
+                            {
+                              "name": "appinsights-connection-string",
+                              "value": "[parameters('applicationInsightsConnectionString')]"
+                            }
+                          ]
+                        },
+                        "template": {
+                          "containers": [
+                            {
+                              "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+                              "name": "api",
+                              "env": [
+                                {
+                                  "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                                  "secretRef": "appinsights-connection-string"
+                                },
+                                {
+                                  "name": "PORT",
+                                  "value": "8000"
+                                },
+                                {
+                                  "name": "ENVIRONMENT",
+                                  "value": "[parameters('environmentName')]"
+                                }
+                              ],
+                              "resources": {
+                                "cpu": "[json('1.0')]",
+                                "memory": "2Gi"
+                              },
+                              "probes": [
+                                {
+                                  "type": "Liveness",
+                                  "httpGet": {
+                                    "path": "/health",
+                                    "port": 8000,
+                                    "scheme": "HTTP"
+                                  },
+                                  "initialDelaySeconds": 30,
+                                  "periodSeconds": 10,
+                                  "timeoutSeconds": 5,
+                                  "failureThreshold": 3
+                                },
+                                {
+                                  "type": "Readiness",
+                                  "httpGet": {
+                                    "path": "/health",
+                                    "port": 8000,
+                                    "scheme": "HTTP"
+                                  },
+                                  "initialDelaySeconds": 5,
+                                  "periodSeconds": 5,
+                                  "timeoutSeconds": 3,
+                                  "failureThreshold": 3
+                                }
+                              ]
+                            }
+                          ],
+                          "scale": {
+                            "minReplicas": 1,
+                            "maxReplicas": 5,
+                            "rules": [
+                              {
+                                "name": "http-scaler",
+                                "http": {
+                                  "metadata": {
+                                    "concurrentRequests": "50"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}', take(parameters('resourceToken'), 10)))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "containerAppName": {
+                      "type": "string",
+                      "value": "[format('api-{0}', take(parameters('resourceToken'), 8))]"
+                    },
+                    "containerAppFqdn": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.App/containerApps', format('api-{0}', take(parameters('resourceToken'), 8))), '2024-03-01').configuration.ingress.fqdn]"
+                    },
+                    "containerAppEnvironmentId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.App/managedEnvironments', format('cae-{0}', take(parameters('resourceToken'), 10)))]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[extensionResourceId(resourceId('Microsoft.ContainerRegistry/registries', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.ContainerRegistry/registries', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken'))), '7f951dda-4ed3-4680-a7ca-43fe172d538d'))]",
+                "[resourceId('Microsoft.Insights/components', format('ai-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]",
+                "[resourceId('Microsoft.ContainerRegistry/registries', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken')))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]",
+                "[resourceId('Microsoft.Resources/deployments', 'network')]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "appgateway",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "environmentName": {
+                    "value": "[parameters('environmentName')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "resourceToken": {
+                    "value": "[variables('resourceToken')]"
+                  },
+                  "tags": {
+                    "value": "[variables('tags')]"
+                  },
+                  "subnetId": {
+                    "value": "[reference(resourceId('Microsoft.Resources/deployments', 'network'), '2022-09-01').outputs.applicationGatewaySubnetId.value]"
+                  },
+                  "containerAppFqdn": {
+                    "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerapp'), '2022-09-01').outputs.containerAppFqdn.value]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.37.4.10188",
+                      "templateHash": "127109516137198116"
+                    }
+                  },
+                  "parameters": {
+                    "environmentName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "The environment name. Used for naming resources."
+                      }
+                    },
+                    "location": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Location for all resources."
+                      }
+                    },
+                    "resourceToken": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Resource token for unique naming."
+                      }
+                    },
+                    "tags": {
+                      "type": "object",
+                      "metadata": {
+                        "description": "Tags to apply to resources."
+                      }
+                    },
+                    "subnetId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Subnet ID for Application Gateway"
+                      }
+                    },
+                    "containerAppFqdn": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Container App FQDN for backend pool"
+                      }
+                    }
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Network/publicIPAddresses",
+                      "apiVersion": "2023-09-01",
+                      "name": "[format('pip-appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "sku": {
+                        "name": "Standard"
+                      },
+                      "properties": {
+                        "publicIPAllocationMethod": "Static",
+                        "dnsSettings": {
+                          "domainNameLabel": "[format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Network/applicationGateways",
+                      "apiVersion": "2023-09-01",
+                      "name": "[format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]",
+                      "location": "[parameters('location')]",
+                      "tags": "[parameters('tags')]",
+                      "properties": {
+                        "sku": {
+                          "name": "Standard_v2",
+                          "tier": "Standard_v2",
+                          "capacity": 1
+                        },
+                        "gatewayIPConfigurations": [
+                          {
+                            "name": "appGatewayIpConfig",
+                            "properties": {
+                              "subnet": {
+                                "id": "[parameters('subnetId')]"
+                              }
+                            }
+                          }
+                        ],
+                        "frontendIPConfigurations": [
+                          {
+                            "name": "appGwPublicFrontendIp",
+                            "properties": {
+                              "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('pip-appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]"
+                              }
+                            }
+                          }
+                        ],
+                        "frontendPorts": [
+                          {
+                            "name": "port_80",
+                            "properties": {
+                              "port": 80
+                            }
+                          }
+                        ],
+                        "backendAddressPools": [
+                          {
+                            "name": "containerAppBackendPool",
+                            "properties": {
+                              "backendAddresses": [
+                                {
+                                  "fqdn": "[parameters('containerAppFqdn')]"
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "backendHttpSettingsCollection": [
+                          {
+                            "name": "containerAppHttpSettings",
+                            "properties": {
+                              "port": 443,
+                              "protocol": "Https",
+                              "cookieBasedAffinity": "Disabled",
+                              "pickHostNameFromBackendAddress": true,
+                              "requestTimeout": 30,
+                              "probe": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/probes', format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')), 'containerAppHealthProbe')]"
+                              }
+                            }
+                          }
+                        ],
+                        "httpListeners": [
+                          {
+                            "name": "containerAppListener",
+                            "properties": {
+                              "frontendIPConfiguration": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')), 'appGwPublicFrontendIp')]"
+                              },
+                              "frontendPort": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')), 'port_80')]"
+                              },
+                              "protocol": "Http"
+                            }
+                          }
+                        ],
+                        "requestRoutingRules": [
+                          {
+                            "name": "containerAppRoutingRule",
+                            "properties": {
+                              "ruleType": "Basic",
+                              "priority": 100,
+                              "httpListener": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')), 'containerAppListener')]"
+                              },
+                              "backendAddressPool": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')), 'containerAppBackendPool')]"
+                              },
+                              "backendHttpSettings": {
+                                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')), 'containerAppHttpSettings')]"
+                              }
+                            }
+                          }
+                        ],
+                        "probes": [
+                          {
+                            "name": "containerAppHealthProbe",
+                            "properties": {
+                              "protocol": "Https",
+                              "path": "/health",
+                              "interval": 30,
+                              "timeout": 30,
+                              "unhealthyThreshold": 3,
+                              "pickHostNameFromBackendHttpSettings": true,
+                              "minServers": 0,
+                              "match": {
+                                "statusCodes": [
+                                  "200-399"
+                                ]
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Network/publicIPAddresses', format('pip-appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken')))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "applicationGatewayName": {
+                      "type": "string",
+                      "value": "[format('appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))]"
+                    },
+                    "publicIpAddress": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', format('pip-appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))), '2023-09-01').ipAddress]"
+                    },
+                    "publicFqdn": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', format('pip-appgw-{0}-{1}', parameters('environmentName'), parameters('resourceToken'))), '2023-09-01').dnsSettings.fqdn]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'containerapp')]",
+                "[resourceId('Microsoft.Resources/deployments', 'network')]"
+              ]
+            }
+          ],
+          "outputs": {
+            "AZURE_LOCATION": {
+              "type": "string",
+              "value": "[parameters('location')]"
+            },
+            "AZURE_CONTAINER_REGISTRY_ENDPOINT": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))), '2023-07-01').loginServer]"
+            },
+            "AZURE_CONTAINER_REGISTRY_NAME": {
+              "type": "string",
+              "value": "[format('cr{0}{1}', replace(parameters('environmentName'), '-', ''), variables('resourceToken'))]"
+            },
+            "SERVICE_API_IDENTITY_PRINCIPAL_ID": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-{0}-{1}', parameters('environmentName'), variables('resourceToken'))), '2023-01-31').principalId]"
+            },
+            "SERVICE_API_NAME": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerapp'), '2022-09-01').outputs.containerAppName.value]"
+            },
+            "SERVICE_API_URI": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Resources/deployments', 'containerapp'), '2022-09-01').outputs.containerAppFqdn.value)]"
+            },
+            "APPLICATION_GATEWAY_PUBLIC_IP": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Resources/deployments', 'appgateway'), '2022-09-01').outputs.publicIpAddress.value]"
+            },
+            "RESOURCE_GROUP_ID": {
+              "type": "string",
+              "value": "[resourceGroup().id]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "AZURE_LOCATION": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "AZURE_TENANT_ID": {
+      "type": "string",
+      "value": "[tenant().tenantId]"
+    },
+    "AZURE_RESOURCE_GROUP": {
+      "type": "string",
+      "value": "[parameters('resourceGroupName')]"
+    },
+    "AZURE_CONTAINER_REGISTRY_ENDPOINT": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2022-09-01').outputs.AZURE_CONTAINER_REGISTRY_ENDPOINT.value]"
+    },
+    "AZURE_CONTAINER_REGISTRY_NAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2022-09-01').outputs.AZURE_CONTAINER_REGISTRY_NAME.value]"
+    },
+    "SERVICE_API_IDENTITY_PRINCIPAL_ID": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2022-09-01').outputs.SERVICE_API_IDENTITY_PRINCIPAL_ID.value]"
+    },
+    "SERVICE_API_NAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2022-09-01').outputs.SERVICE_API_NAME.value]"
+    },
+    "SERVICE_API_URI": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2022-09-01').outputs.SERVICE_API_URI.value]"
+    },
+    "APPLICATION_GATEWAY_PUBLIC_IP": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('resourceGroupName')), 'Microsoft.Resources/deployments', 'resources'), '2022-09-01').outputs.APPLICATION_GATEWAY_PUBLIC_IP.value]"
+    },
+    "RESOURCE_GROUP_ID": {
+      "type": "string",
+      "value": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('resourceGroupName'))]"
+    }
+  }
+}

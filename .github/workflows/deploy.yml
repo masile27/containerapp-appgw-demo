@@ -1,0 +1,51 @@
+name: Deploy to Azure Container Apps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: rg-containerapp-appgw-demo
+  AZURE_LOCATION: eastus
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Azure CLI
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Setup Azure Developer CLI
+      uses: Azure/setup-azd@v0.1.0
+    
+    - name: Log in with Azure Developer CLI
+      run: |
+        $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
+        Write-Host "##vso[task.setvariable variable=AZURE_CLIENT_ID]$($info.clientId)"
+        Write-Host "##vso[task.setvariable variable=AZURE_CLIENT_SECRET;issecret=true]$($info.clientSecret)"
+        Write-Host "##vso[task.setvariable variable=AZURE_TENANT_ID]$($info.tenantId)"
+        Write-Host "##vso[task.setvariable variable=AZURE_SUBSCRIPTION_ID]$($info.subscriptionId)"
+        azd auth login --client-id "$($info.clientId)" --client-secret "$($info.clientSecret)" --tenant-id "$($info.tenantId)"
+      shell: pwsh
+      env:
+        AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Set azd environment
+      run: |
+        azd env set AZURE_LOCATION ${{ env.AZURE_LOCATION }}
+        azd env set AZURE_SUBSCRIPTION_ID ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
+    
+    - name: Deploy with azd
+      run: azd up --no-prompt
+      env:
+        AZURE_ENV_NAME: containerapp-appgw-demo
+        AZURE_LOCATION: ${{ env.AZURE_LOCATION }}
+        AZURE_SUBSCRIPTION_ID: ${{ fromJson(secrets.AZURE_CREDENTIALS).subscriptionId }}
