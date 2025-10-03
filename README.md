@@ -2,15 +2,15 @@
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmasile27%2Fcontainerapp-appgw-demo%2Fmain%2Fazuredeploy.json)
 
-Demo showing how Azure Application Gateway routes traffic to Container Apps with Workload Profiles v2 running a Python Flask API.
+Demo showing how Azure Application Gateway routes traffic to Container Apps with Workload Profiles v2 running a containerized web application.
 
 ## What This Creates
 
 - **Application Gateway** - Routes incoming HTTP traffic
 - **Container Apps Environment** - Workload Profiles v2 with dedicated compute
-- **Python Flask API** - Simple REST API with health endpoints
+- **Demo Web Application** - Simple containerized web app for testing
 - **Virtual Network** - Secure networking between components
-- **Container Registry** - Stores the container image
+- **Container Registry** - Stores container images
 - **Monitoring** - Log Analytics and Application Insights
 
 ## Quick Deploy
@@ -27,23 +27,30 @@ azd up
 
 ## Testing the Deployment
 
-After deployment, get your Application Gateway's public IP and test the endpoints:
+After deployment, get your Application Gateway's public IP and test the connection:
 
 ```bash
 # Get the public IP from Azure portal, then test:
 curl http://YOUR-APP-GATEWAY-IP/
-curl http://YOUR-APP-GATEWAY-IP/health
-curl http://YOUR-APP-GATEWAY-IP/api/info
+
+# Or visit in your browser:
+# http://YOUR-APP-GATEWAY-IP/
 ```
 
-## What Gets Created
+You should see the Azure Container Instances Hello World page, confirming that:
+- ✅ Application Gateway is routing traffic correctly
+- ✅ Container App is running and responding
+- ✅ Network connectivity is working between components
 
-- Application Gateway with public IP
-- Container Apps Environment (Workload Profiles v2)
-- Python Flask API container
-- Virtual Network with secure subnets
-- Container Registry for images
-- Log Analytics and monitoring
+## Architecture
+
+This demo creates a complete enterprise-grade setup:
+- **Application Gateway** (Standard_v2) with public IP and health probes
+- **Container Apps Environment** with Workload Profiles v2 (dedicated compute)
+- **Demo container** running on port 80 with auto-scaling (1-5 replicas)
+- **Virtual Network** (10.0.0.0/16) with separate subnets for gateway and apps
+- **Azure Container Registry** for storing custom images
+- **Monitoring stack** with Log Analytics and Application Insights
 
 ## Files
 
@@ -53,11 +60,13 @@ curl http://YOUR-APP-GATEWAY-IP/api/info
 - `Dockerfile` - Container image definition
 - `.github/workflows/` - GitHub Actions for automated builds
 
-## Container Image
+## Container Images
 
-- **Deploy to Azure**: Uses `mcr.microsoft.com/azuredocs/aci-helloworld` for immediate functionality
-- **Custom Development**: Use `azd up` to build and deploy your custom Flask API
-- **GitHub Actions**: Automatically builds custom image when you push changes
+- **Deploy to Azure Button**: Uses `mcr.microsoft.com/azuredocs/aci-helloworld` for immediate functionality
+- **Custom Development**: Use `azd up` to build and deploy the custom Flask API from `src/app.py`
+- **GitHub Actions**: Automatically builds and pushes custom images when you modify source code
+
+The demo works with both images - the Hello World container proves the architecture works, while the custom Flask API shows how to deploy your own applications.
 
 ## Cleanup
 
