@@ -26,8 +26,8 @@ git add .
 # Commit your code
 git commit -m "Initial commit: Azure Application Gateway + Container Apps demo"
 
-# Add your GitHub repository as remote (replace YOUR-USERNAME)
-git remote add origin https://github.com/YOUR-USERNAME/containerapp-appgw-demo.git
+# Add your GitHub repository as remote
+git remote add origin https://github.com/masile27/containerapp-appgw-demo.git
 
 # Push to GitHub
 git branch -M main

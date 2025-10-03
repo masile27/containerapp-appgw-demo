@@ -1,6 +1,6 @@
 # Deploy to Azure - Application Gateway with Container Apps
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2F[YOUR-GITHUB-USERNAME]%2Fcontainerapp-appgw-demo%2Fmain%2Fazuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmasile27%2Fcontainerapp-appgw-demo%2Fmain%2Fazuredeploy.json)
 
 This repository demonstrates how an Azure Application Gateway can serve incoming requests to a backend Container App with Workload Profiles (v2) running a Python microservice.
 
