@@ -51,6 +51,13 @@ curl http://YOUR-APP-GATEWAY-IP/api/info
 - `infra/` - Bicep templates for Azure resources
 - `azuredeploy.json` - ARM template for one-click deploy
 - `Dockerfile` - Container image definition
+- `.github/workflows/` - GitHub Actions for automated builds
+
+## Container Image
+
+- **Deploy to Azure**: Uses `mcr.microsoft.com/azuredocs/aci-helloworld` for immediate functionality
+- **Custom Development**: Use `azd up` to build and deploy your custom Flask API
+- **GitHub Actions**: Automatically builds custom image when you push changes
 
 ## Cleanup
 
