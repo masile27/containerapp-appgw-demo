@@ -37,9 +37,9 @@ curl http://YOUR-APP-GATEWAY-IP/
 # http://YOUR-APP-GATEWAY-IP/
 ```
 
-You should see the Azure Container Instances Hello World page, confirming that:
+You should see the nginx welcome page, confirming that:
 - ✅ Application Gateway is routing traffic correctly
-- ✅ Container App is running and responding
+- ✅ Container App is running and responding  
 - ✅ Network connectivity is working between components
 
 ## Architecture
@@ -62,11 +62,11 @@ This demo creates a complete enterprise-grade setup:
 
 ## Container Images
 
-- **Deploy to Azure Button**: Uses `mcr.microsoft.com/azuredocs/aci-helloworld` for immediate functionality
+- **Deploy to Azure Button**: Uses `nginx:alpine` for immediate, reliable functionality
 - **Custom Development**: Use `azd up` to build and deploy the custom Flask API from `src/app.py`
 - **GitHub Actions**: Automatically builds and pushes custom images when you modify source code
 
-The demo works with both images - the Hello World container proves the architecture works, while the custom Flask API shows how to deploy your own applications.
+The demo works with both images - nginx proves the architecture works reliably, while the custom Flask API shows how to deploy your own applications.
 
 ## Cleanup
 
