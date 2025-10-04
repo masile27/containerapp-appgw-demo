@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "3506122241138803284"
+      "templateHash": "1349320686897498043"
     }
   },
   "parameters": {
@@ -68,7 +68,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "2845911926540402089"
+              "templateHash": "17844173128287954716"
             }
           },
           "parameters": {
@@ -678,7 +678,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "127109516137198116"
+                      "templateHash": "15287605230241739132"
                     }
                   },
                   "parameters": {
@@ -840,7 +840,7 @@
                             "name": "containerAppHealthProbe",
                             "properties": {
                               "protocol": "Https",
-                              "path": "/health",
+                              "path": "/",
                               "interval": 30,
                               "timeout": 30,
                               "unhealthyThreshold": 3,
