@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "2299937807714294467"
+      "templateHash": "14726837602019556302"
     }
   },
   "parameters": {
@@ -68,7 +68,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "690406322372682539"
+              "templateHash": "10139180213224478461"
             }
           },
           "parameters": {
@@ -408,7 +408,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "14925710613521747984"
+                      "templateHash": "13787691161853949845"
                     }
                   },
                   "parameters": {
@@ -518,7 +518,7 @@
                         "configuration": {
                           "ingress": {
                             "external": true,
-                            "targetPort": 80,
+                            "targetPort": 8000,
                             "transport": "http",
                             "allowInsecure": false,
                             "traffic": [
@@ -549,7 +549,7 @@
                               "env": [
                                 {
                                   "name": "PORT",
-                                  "value": "80"
+                                  "value": "8000"
                                 },
                                 {
                                   "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
@@ -573,7 +573,7 @@
                                   "type": "Liveness",
                                   "httpGet": {
                                     "path": "/",
-                                    "port": 80,
+                                    "port": 8000,
                                     "scheme": "HTTP"
                                   },
                                   "initialDelaySeconds": 30,
@@ -585,7 +585,7 @@
                                   "type": "Readiness",
                                   "httpGet": {
                                     "path": "/",
-                                    "port": 80,
+                                    "port": 8000,
                                     "scheme": "HTTP"
                                   },
                                   "initialDelaySeconds": 5,

@@ -77,7 +77,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       ingress: {
         external: true
-        targetPort: 80
+        targetPort: 8000
         transport: 'http'
         allowInsecure: false
         traffic: [
@@ -108,7 +108,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           env: [
             {
               name: 'PORT'
-              value: '80'
+              value: '8000'
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
@@ -132,7 +132,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               type: 'Liveness'
               httpGet: {
                 path: '/'
-                port: 80
+                port: 8000
                 scheme: 'HTTP'
               }
               initialDelaySeconds: 30
@@ -144,7 +144,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               type: 'Readiness'
               httpGet: {
                 path: '/'
-                port: 80
+                port: 8000
                 scheme: 'HTTP'
               }
               initialDelaySeconds: 5
